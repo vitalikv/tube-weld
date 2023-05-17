@@ -91,7 +91,7 @@ function init() {
     loaderModel.loaderObj('0019.005-TH_02.osf');
   }
 
-  addJoins = new AddJoins({ controls, scene, canvas: renderer.domElement, tubes: meshes });
+  addJoins = new AddJoins({ controls, scene, canvas: renderer.domElement, tubes: [] });
   selectObj = new SelectObj({ controls, scene, canvas: renderer.domElement, meshes: [] });
 
   // todo отключил метод просчета нормалей
@@ -112,7 +112,7 @@ function init() {
 // подписка событие - обновление массива объектов для расчета стыков
 export function setMeshes({ arr }) {
   meshes = arr;
-  addJoins.updateMesh(meshes);
+  //addJoins.updateMesh(meshes);
   selectObj.updateMesh(meshes);
 }
 
@@ -134,7 +134,8 @@ function showWelds() {
   const geometry = new THREE.CircleGeometry(1, 32);
   const material = new THREE.MeshBasicMaterial({ color: '#7FFF00', depthTest: false, transparent: true, opacity: 1, side: 2 });
 
-  console.log(geometries);
+  //console.log(geometries);
+  const arr = [];
 
   for (let i = 0; i < geometries.length; i++) {
     const g = geometries[i].userData.empty ? geometry : geometries[i];
@@ -154,8 +155,16 @@ function showWelds() {
       mesh.position.set(pos.x, pos.y, pos.z);
     }
 
+    mesh.userData = geometries[i].userData;
+
     scene.add(mesh);
+
+    arr.push(mesh);
   }
+
+  console.log(arr);
+
+  setMeshes({ arr });
 }
 
 function render() {

@@ -8,8 +8,7 @@ function setInf({ scene2 }) {
 
 // расчет стыков по дисциплине
 export class CalcWelds {
-  customGeom = false;
-  covers = [];
+  customGeom = false; // false - без геотметрии, true - с геометрией стыка
   geometries = [];
 
   constructor({ scene }) {
@@ -19,13 +18,16 @@ export class CalcWelds {
   getGeometries(meshes, customGeom = false) {
     this.customGeom = customGeom;
 
+    const list = [];
+
     for (let i = 0; i < meshes.length; i++) {
-      this.calcCgsCloneTube(meshes[i]);
+      const result = this.calculation(meshes[i]);
+      list.push(...result);
     }
 
-    for (let i = 0; i < this.covers.length; i++) {
+    for (let i = 0; i < list.length; i++) {
+      this.getClosestPoint({ list, id1: i });
       try {
-        this.getClosestPoint({ arr: this.covers, id1: i });
       } catch (e) {
         // captureMessage("Ошибка получения ближайшей точки", {
         //   level: "warning",
@@ -33,16 +35,22 @@ export class CalcWelds {
       }
     }
 
-    for (let i = 0; i < this.covers.length; i++) {
-      if (this.covers[i].dist === Infinity) continue;
-      if (this.covers[i].id2 === -1) continue;
-      if (this.covers[i].tubes[0] === this.covers[this.covers[i].id2].tubes[0]) continue;
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].id2 !== -1) continue;
+      if (list[i].clone) continue;
 
-      const ifc_joint_id = [this.covers[i].tubes[0], this.covers[this.covers[i].id2].tubes[0]];
+      this.getClosestObj({ list, id: i, meshes });
+    }
 
-      const geometry = this.crPol({ path: this.covers[i].path, center: this.covers[i].center, ifc_joint_id });
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].id2 === -1) continue;
+      if (list[i].clone) continue;
 
-      this.covers[this.covers[i].id2].id2 = -1;
+      const ifc_joint_id = [...list[i].guids];
+      if (list[i].id2 !== 999999) ifc_joint_id.push(...list[list[i].id2].guids);
+      //const ifc_joint_id = [];
+
+      const geometry = this.crPol({ path: list[i].path, center: list[i].centerPos, ifc_joint_id });
 
       if (geometry.userData.scale && geometry.userData.scale > 1) continue;
       this.geometries.push(geometry);
@@ -51,36 +59,71 @@ export class CalcWelds {
     return this.geometries;
   }
 
-  getClosestPoint({ arr, id1 = 0 }) {
+  // находим дубли (clone = true) и одиночные стыки (id2 = -1)
+  getClosestPoint({ list, id1 = 0 }) {
+    if (list[id1].clone) return;
+
     let minDist = Infinity;
-    let id2 = 0;
+    let id2 = -1;
 
-    for (let i = 0; i < arr.length; i++) {
+    for (let i = 0; i < list.length; i++) {
       if (id1 === i) continue;
-      if (arr[id1].tubes[0] === arr[i].tubes[0]) continue;
 
-      let dist = arr[i].center.distanceTo(arr[id1].center);
-      if (dist <= minDist) {
+      let dist = list[i].centerPos.distanceTo(list[id1].centerPos);
+      if (dist <= minDist && list[id1].minDist > dist && dist < 0.001) {
         minDist = dist;
         id2 = i;
       }
     }
 
-    if (arr[id1].id2 === -1 || arr[id1].minDist > minDist) {
-      arr[id1].id2 = id2;
-      arr[id2].id2 = id1;
-    }
-    arr[id1].dist = arr[id1].minDist > minDist ? minDist : Infinity;
+    list[id1].id2 = id2;
+    if (id2 > -1) list[id2].clone = true; // дубль стыка
   }
 
-  // находим начало и конец трубы
-  calcCgsCloneTube(obj) {
+  // у одиночных стыков (которые не соединены с другими трубами)
+  // находим ближайший фитинг и если он есть, то этот стык помечаем, что нужно добавить на сцену
+  getClosestObj({ list, id, meshes }) {
+    const posC = list[id].centerPos;
+    const pos1 = list[id].path[0].pos;
+    const n = Math.ceil((list[id].path.length - 1) / 4);
+    const pos2 = list[id].path[n].pos;
+
+    const dirA = new THREE.Vector3(pos1.x - posC.x, pos1.y - posC.y, pos1.z - posC.z).normalize();
+    const dirB = new THREE.Vector3(pos2.x - posC.x, pos2.y - posC.y, pos2.z - posC.z).normalize();
+
+    const arr = meshes.filter((mesh) => mesh !== list[id].obj);
+
+    const distLimit = 0.01;
+    let dir = new THREE.Vector3().crossVectors(dirA, dirB).normalize();
+    dir = new THREE.Vector3().addScaledVector(dir, distLimit);
+    const pos = posC.clone().sub(dir);
+    this.helperArrow({ dir, pos, length: 1, color: 0x0000ff });
+
+    const ray = new THREE.Ray(pos, dir);
+    const raycaster = new THREE.Raycaster();
+    raycaster.ray = ray;
+    const intersections = raycaster.intersectObjects(arr);
+
+    if (intersections.length > 0) {
+      if (intersections[0].distance < distLimit + 0.01) {
+        list[id].id2 = 999999;
+      }
+    }
+  }
+
+  clear() {
+    this.geometries = [];
+  }
+
+  // находим стыки
+  calculation(obj) {
     //obj.visible = false;
     obj.updateMatrixWorld();
     obj.updateMatrix();
 
     let geometry = obj.geometry.clone();
     geometry = geometry.toNonIndexed();
+    // todo удалить
     obj.material.color.set(new THREE.Color(0xff0000));
     obj.material.wireframe = true;
 
@@ -89,9 +132,11 @@ export class CalcWelds {
 
     const arrP = this.getDataPoints({ position, normal, obj });
 
-    const arrP_Id = this.getDataPolygons({ arr: arrP });
+    const arrP2 = this.getDataPolygons({ arr: arrP });
 
-    this.getFirstEndPoint({ arrP_Id, obj });
+    const arr = this.getCap({ arr: arrP2, obj, list: [] });
+
+    return arr;
   }
 
   // находим все уникальные точки и нормали для каждой точки
@@ -151,7 +196,8 @@ export class CalcWelds {
       // если у трубы нету крышки
       if (data.point.length === 3) {
         list.push({ id: ind, pos: data.pos });
-      } else if (data.dir.length === 3) {
+      }
+      if (data.dir.length === 3) {
         // если у трубы есть крышка
         list.push({ id: ind, pos: data.pos });
       }
@@ -160,35 +206,33 @@ export class CalcWelds {
     return list;
   }
 
-  // получаем начало и конец трубы
-  getFirstEndPoint({ arrP_Id, obj }) {
-    if (arrP_Id.length === 0) return;
+  // получаем крышку
+  getCap({ arr, obj, list }) {
+    if (arr.length === 0) return list;
+    if (list.length > 4) return [];
 
-    let path = this.getContourPoint({ arr: arrP_Id });
-    if (path.length === 0) return;
+    let path = this.getContourPoint({ arr });
+    if (path.length === 0 || path.length < 10) return list;
 
-    let c1 = this.getCenter({ path });
-    this.covers.push({ minDist: c1.distanceTo(path[0].pos), center: c1, path, id2: -1, tubes: [obj.userData.geoGuids[0]] });
+    const centerPos = this.getCenter({ path });
+    const minDist = centerPos.distanceTo(path[0].pos);
+    list.push({ path, centerPos, minDist, guids: [obj.userData.geoGuids[0]], obj });
 
-    let arrP_Id_2 = [];
+    let arr2 = [];
 
-    for (let i = 0; i < arrP_Id.length; i++) {
+    for (let i = 0; i < arr.length; i++) {
       let flag = false;
       for (let i2 = 0; i2 < path.length; i2++) {
-        if (arrP_Id[i].id === path[i2].hit) {
+        if (arr[i].id === path[i2].hit) {
           flag = true;
           break;
         }
       }
 
-      if (!flag) arrP_Id_2.push(arrP_Id[i]);
+      if (!flag) arr2.push(arr[i]);
     }
 
-    path = this.getContourPoint({ arr: arrP_Id_2 });
-    if (path.length === 0) return;
-
-    let c2 = this.getCenter({ path });
-    this.covers.push({ minDist: c2.distanceTo(path[0].pos), center: c2, path, id2: -1, tubes: [obj.userData.geoGuids[0]] });
+    return this.getCap({ arr: arr2, obj, list });
   }
 
   // получаем контру круга
@@ -246,7 +290,7 @@ export class CalcWelds {
     sumPos.y /= path.length;
     sumPos.z /= path.length;
 
-    this.helperBox({ pos: sumPos, size: 0.1, color: 0x00ff00 });
+    //this.helperBox({ pos: sumPos, size: 0.1, color: 0x00ff00 });
 
     return sumPos;
   }
@@ -275,7 +319,6 @@ export class CalcWelds {
         v.push(path[i].pos.x - sumPos.x, path[i].pos.y - sumPos.y, path[i].pos.z - sumPos.z);
       }
 
-      geometry = new THREE.BufferGeometry();
       const vertices = new Float32Array([...v]);
       geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
       geometry.computeVertexNormals();
@@ -284,16 +327,17 @@ export class CalcWelds {
       const n = Math.ceil((path.length - 1) / 4);
       const dirB = new THREE.Vector3(path[n].pos.x - sumPos.x, path[n].pos.y - sumPos.y, path[n].pos.z - sumPos.z).normalize();
 
-      const dir = new THREE.Vector3().crossVectors(dirA, dirB);
-      this.helperArrow({ dir, pos: sumPos, length: 0.5, color: 0x0000ff });
+      const dir = new THREE.Vector3().crossVectors(dirA, dirB).normalize();
+      //this.helperArrow({ dir, pos: sumPos, length: 1, color: 0x0000ff });
 
       const m = new THREE.Matrix4().lookAt(new THREE.Vector3(), dir, new THREE.Vector3(0, 1, 0));
       const rot = new THREE.Euler().setFromRotationMatrix(m);
 
       const scale = new THREE.Vector3(path[0].pos.x - sumPos.x, path[0].pos.y - sumPos.y, path[0].pos.z - sumPos.z).length();
 
+      geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0]), 3));
       geometry.userData.empty = true;
-      geometry.userData.rot = rot;
+      geometry.userData.rot = new THREE.Vector3(rot.x, rot.y, rot.z);
       geometry.userData.scale = scale;
     }
 

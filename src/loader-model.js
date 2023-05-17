@@ -574,7 +574,9 @@ export class LoaderModel {
     list.push(...this.listFittings());
 
     //list = this.listFittings();
-
+    //list.push('285ec00f-42f1-4fb8-ad39-ee613d0c0cc6', '2b87c557-d077-49d2-9a50-f688537d54f0');
+    //list = ['2b87c557-d077-49d2-9a50-f688537d54f0'];
+    //list = ['75cf4d5b-3c04-43fc-927c-6e8eec4aa604', '086c730d-7434-433f-84bc-b830e7146f7b', '9572b527-b709-4e1e-93e2-3650b9cd8a92'];
     return list;
   }
 
