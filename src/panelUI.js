@@ -1,4 +1,4 @@
-import { addJoint, calcWelds, showWelds } from './index';
+import { addJoint, calcWelds, showWelds, clickHelper } from './index';
 
 export class PanelUI {
   container$;
@@ -25,6 +25,7 @@ export class PanelUI {
 
     this.btns$[ind].onmousedown = (e) => {
       addJoint.setActivated(!addJoint.activated);
+      clickHelper.setActivated(!clickHelper.activated);
 
       const btn = e.target;
       const color = btn.style.background === 'rgb(255, 255, 255)' ? '#87ea89' : '#fff';

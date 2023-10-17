@@ -7,13 +7,15 @@ import { LoaderModel } from './loader-model';
 import { AddJoint } from './addJoint';
 import { CalcWelds } from './calcWelds';
 import { SelectObj } from './select-obj';
+import { ClickHelper } from './clickHelper';
 
 let renderer, camera, scene;
 let controls;
 let selectObj;
-let meshes = [];
 
-export let addJoint, calcWelds;
+export let addJoint, calcWelds, clickHelper;
+export let meshObjs = [],
+  meshJoints = [];
 
 init();
 initServ();
@@ -109,13 +111,15 @@ function init() {
 
 // подписка событие - обновление массива объектов для расчета стыков
 export function setMeshes({ arr }) {
-  meshes = arr;
-  addJoint.updateMesh(meshes);
-  //selectObj.updateMesh(meshes);
+  meshObjs = arr;
+  addJoint.updateMesh(arr);
+  //selectObj.updateMesh(arr);
 }
 
 // показываем стыки
 export function showWelds() {
+  const meshes = meshObjs;
+
   for (let i = 0; i < meshes.length; i++) {
     meshes[i].userData.geoGuids = [meshes[i].uuid];
   }
@@ -154,6 +158,7 @@ export function showWelds() {
     arr.push(mesh);
   }
 
+  meshJoints = arr;
   console.log(arr);
 }
 
@@ -163,6 +168,7 @@ function initServ() {
 
   addJoint = new AddJoint({ controls, scene, canvas: renderer.domElement, tubes: [] });
   selectObj = new SelectObj({ controls, scene, canvas: renderer.domElement, meshes: [] });
+  clickHelper = new ClickHelper({ controls, canvas: renderer.domElement });
 }
 
 function render() {
