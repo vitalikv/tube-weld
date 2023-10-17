@@ -112,8 +112,8 @@ function init() {
 // подписка событие - обновление массива объектов для расчета стыков
 export function setMeshes({ arr }) {
   meshes = arr;
-  //addJoins.updateMesh(meshes);
-  selectObj.updateMesh(meshes);
+  addJoins.updateMesh(meshes);
+  //selectObj.updateMesh(meshes);
 }
 
 function onKeyDown2(event) {

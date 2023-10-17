@@ -212,7 +212,8 @@ export class CalcWelds {
     if (list.length > 4) return [];
 
     let path = this.getContourPoint({ arr });
-    if (path.length === 0 || path.length < 10) return list;
+    if (path.length === 0) return list;
+    if (path.length < 12) return [];
 
     const centerPos = this.getCenter({ path });
     const minDist = centerPos.distanceTo(path[0].pos);
@@ -328,7 +329,7 @@ export class CalcWelds {
       const dirB = new THREE.Vector3(path[n].pos.x - sumPos.x, path[n].pos.y - sumPos.y, path[n].pos.z - sumPos.z).normalize();
 
       const dir = new THREE.Vector3().crossVectors(dirA, dirB).normalize();
-      //this.helperArrow({ dir, pos: sumPos, length: 1, color: 0x0000ff });
+      this.helperArrow({ dir, pos: sumPos, length: 1, color: 0x0000ff });
 
       const m = new THREE.Matrix4().lookAt(new THREE.Vector3(), dir, new THREE.Vector3(0, 1, 0));
       const rot = new THREE.Euler().setFromRotationMatrix(m);
