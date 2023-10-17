@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 // расчет стыка по клику
-export class AddJoins {
+export class AddJoint {
   controls;
   scene;
   canvas;
@@ -9,6 +9,7 @@ export class AddJoins {
   mathPlane;
   intersection;
   tubes;
+  activated = false;
 
   constructor({ controls, scene, canvas, tubes }) {
     this.controls = controls;
@@ -54,7 +55,13 @@ export class AddJoins {
     return intersects;
   }
 
+  setActivated(value) {
+    this.activated = value;
+  }
+
   onMouseDown = (event) => {
+    if (!this.activated) return;
+
     const ray = this.rayIntersect(event, this.tubes, 'arr');
 
     if (ray && ray.length > 0) {

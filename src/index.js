@@ -2,17 +2,21 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSG } from 'three-csg-ts';
 
+import { PanelUI } from './panelUI';
 import { LoaderModel } from './loader-model';
-import { AddJoins } from './add-joins-3';
+import { AddJoint } from './addJoint';
 import { CalcWelds } from './calcWelds';
 import { SelectObj } from './select-obj';
 
-let renderer, camera, scene, clock, gui, stats;
+let renderer, camera, scene;
 let controls;
-let addJoins, selectObj;
+let selectObj;
 let meshes = [];
 
+export let addJoint, calcWelds;
+
 init();
+initServ();
 render();
 
 function init() {
@@ -91,12 +95,6 @@ function init() {
     loaderModel.loaderObj('0019.005-TH_02.osf');
   }
 
-  addJoins = new AddJoins({ controls, scene, canvas: renderer.domElement, tubes: [] });
-  selectObj = new SelectObj({ controls, scene, canvas: renderer.domElement, meshes: [] });
-
-  // todo отключил метод просчета нормалей
-  document.addEventListener('keydown', onKeyDown2);
-
   window.addEventListener(
     'resize',
     function () {
@@ -112,18 +110,12 @@ function init() {
 // подписка событие - обновление массива объектов для расчета стыков
 export function setMeshes({ arr }) {
   meshes = arr;
-  addJoins.updateMesh(meshes);
+  addJoint.updateMesh(meshes);
   //selectObj.updateMesh(meshes);
 }
 
-function onKeyDown2(event) {
-  if (event.code === 'Space') {
-    showWelds();
-  }
-}
-
 // показываем стыки
-function showWelds() {
+export function showWelds() {
   for (let i = 0; i < meshes.length; i++) {
     meshes[i].userData.geoGuids = [meshes[i].uuid];
   }
@@ -163,8 +155,14 @@ function showWelds() {
   }
 
   console.log(arr);
+}
 
-  setMeshes({ arr });
+function initServ() {
+  const panelUI = new PanelUI();
+  panelUI.init();
+
+  addJoint = new AddJoint({ controls, scene, canvas: renderer.domElement, tubes: [] });
+  selectObj = new SelectObj({ controls, scene, canvas: renderer.domElement, meshes: [] });
 }
 
 function render() {
