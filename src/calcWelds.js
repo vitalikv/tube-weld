@@ -148,7 +148,7 @@ export class CalcWelds {
       let origin = new THREE.Vector3(position.array[i + 0], position.array[i + 1], position.array[i + 2]);
       origin = origin.applyMatrix4(obj.matrixWorld);
 
-      //this.helperArrow({ dir, pos: origin, length: 1, color: 0x0000ff });
+      if (obj.uuid === '58445ddf-f8c5-4a53-a72e-dad86e8bfc3c') this.helperArrow({ dir, pos: origin, length: 1, color: 0x0000ff });
 
       let ind = -1;
       for (let i2 = 0; i2 < arrP.length; i2++) {
@@ -212,6 +212,7 @@ export class CalcWelds {
     if (list.length > 4) return [];
 
     let path = this.getContourPoint({ arr });
+    if (obj.uuid === '58445ddf-f8c5-4a53-a72e-dad86e8bfc3c') console.log(obj, path);
     if (path.length === 0) return list;
     if (path.length < 12) return [];
 
@@ -340,10 +341,13 @@ export class CalcWelds {
       geometry.userData.empty = true;
       geometry.userData.rot = new THREE.Vector3(rot.x, rot.y, rot.z);
       geometry.userData.scale = scale;
+      geometry.userData.dir = dir;
     }
 
     geometry.userData.ifc_joint_id = ifc_joint_id;
     geometry.userData.pos = sumPos;
+
+    geometry.userData.tag = 'joint'; // нету в cs
 
     return geometry;
   }

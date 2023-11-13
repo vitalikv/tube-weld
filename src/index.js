@@ -6,6 +6,7 @@ import { PanelUI } from './panelUI';
 import { LoaderModel } from './loader-model';
 import { AddJoint } from './addJoint';
 import { CalcWelds } from './calcWelds';
+import { CalcTypeObj } from './calcTypeObj';
 import { SelectObj } from './select-obj';
 import { ClickHelper } from './clickHelper';
 
@@ -13,7 +14,7 @@ let renderer, camera, scene;
 let controls;
 let selectObj;
 
-export let addJoint, calcWelds, clickHelper;
+export let addJoint, calcWelds, clickHelper, calcTypeObj;
 export let meshObjs = [],
   meshJoints = [];
 
@@ -124,7 +125,6 @@ export function showWelds() {
     meshes[i].userData.geoGuids = [meshes[i].uuid];
   }
 
-  const calcWelds = new CalcWelds({ scene });
   const geometries = calcWelds.getGeometries(meshes, false);
 
   const geometry = new THREE.CircleGeometry(1, 32);
@@ -166,7 +166,9 @@ function initServ() {
   const panelUI = new PanelUI();
   panelUI.init();
 
+  calcWelds = new CalcWelds({ scene });
   addJoint = new AddJoint({ controls, scene, canvas: renderer.domElement, tubes: [] });
+  calcTypeObj = new CalcTypeObj();
   selectObj = new SelectObj({ controls, scene, canvas: renderer.domElement, meshes: [] });
   clickHelper = new ClickHelper({ controls, canvas: renderer.domElement });
 }

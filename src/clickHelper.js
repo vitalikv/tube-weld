@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import { meshObjs, meshJoints } from './index';
+import { meshObjs, meshJoints, calcTypeObj } from './index';
 
 export class ClickHelper {
   controls;
@@ -24,10 +24,17 @@ export class ClickHelper {
     if (!this.activated) return;
     if (meshJoints.length === 0) return;
 
-    const ray = this.rayIntersect(event, meshJoints, 'arr');
+    const ray = this.rayIntersect(event, [...meshObjs, ...meshJoints], 'arr');
 
     if (ray && ray.length > 0) {
-      console.log(ray[0].object['userData']);
+      const ind = ray.findIndex((item) => item.object['userData'].tag && item.object['userData'].tag === 'joint');
+
+      if (ind > -1) {
+        this.clickJoint(ray[ind].object);
+      } else {
+        console.log(ray[0].object);
+        this.clickObj(ray[0].object);
+      }
     }
   };
 
@@ -54,5 +61,25 @@ export class ClickHelper {
     }
 
     return intersects;
+  }
+
+  clickObj(obj) {
+    calcTypeObj.getTypeObj({ obj, joints: meshJoints });
+  }
+
+  clickJoint(joint) {
+    const objsId = joint['userData'].ifc_joint_id;
+
+    console.log(joint['userData'], objsId);
+
+    for (let i = 0; i < objsId.length; i++) {
+      const obj = meshObjs.find((obj) => obj.uuid === objsId[i]);
+
+      if (obj) {
+        obj.material = obj.material.clone();
+        obj.material.color.set(0xffffff);
+        //obj.visible = false;
+      }
+    }
   }
 }

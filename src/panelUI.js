@@ -1,4 +1,4 @@
-import { addJoint, calcWelds, showWelds, clickHelper } from './index';
+import { addJoint, calcWelds, showWelds, calcTypeObj, clickHelper, meshObjs, meshJoints } from './index';
 
 export class PanelUI {
   container$;
@@ -11,6 +11,7 @@ export class PanelUI {
 
     this.btns$[0] = this.crBtn({ txt: 'добавить стык' });
     this.btns$[1] = this.crBtn({ txt: 'рассчитать стыки' });
+    this.btns$[2] = this.crBtn({ txt: 'рассчитать типы' });
 
     this.initEvent();
   }
@@ -35,6 +36,11 @@ export class PanelUI {
 
     this.btns$[ind].onmousedown = () => {
       showWelds();
+    };
+    ind++;
+
+    this.btns$[ind].onmousedown = () => {
+      calcTypeObj.calcTypes({ meshObjs, meshJoints });
     };
     ind++;
   }
