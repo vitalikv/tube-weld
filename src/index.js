@@ -10,7 +10,8 @@ import { CalcTypeObj } from './calcTypeObj';
 import { SelectObj } from './select-obj';
 import { ClickHelper } from './clickHelper';
 
-let renderer, camera, scene;
+export let scene;
+let renderer, camera;
 let controls;
 let selectObj;
 
