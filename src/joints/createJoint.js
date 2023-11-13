@@ -69,12 +69,12 @@ export class CreateJoint {
       this.plane.position.set(0, 0, 0);
       this.plane.rotation.copy(new THREE.Euler());
 
-      this.getWeld();
+      this.calcJoint();
     }
   };
 
   // основной метод расчета и получения стыка
-  getWeld() {
+  calcJoint() {
     const obj = this.intersection.object;
     const face = this.intersection.face;
     //obj.visible = false;
@@ -107,54 +107,10 @@ export class CreateJoint {
 
     const dirs = [];
 
-    if (1 === 1) {
-      for (let i = 0; i < tri.length; i++) {
-        const i2 = i === tri.length - 1 ? 0 : i + 1;
-        const dir = tri[i2].clone().sub(tri[i]).normalize();
-        dirs.push(dir);
-      }
-    } else {
-      for (let i = 0; i < index.count; i += 3) {
-        const a = index.getX(i);
-        const b = index.getX(i + 1);
-        const c = index.getX(i + 2);
-
-        // ищем соседний треугольник (должны совпадать 2 точки)
-        const res = this.isEqualArray({ a: [face.a, face.b, face.c], b: [a, b, c] });
-
-        // найдя 2 соседних треугольника, мы можем найти линию которая их соединяет
-        if (res) {
-          const tri = [face.a, face.b, face.c];
-
-          for (let i2 = 0; i2 < tri.length; i2++) {
-            // зная общую линию 2-х треугольников, мы можем из 3 точек(нашего треугольника) найти 1 точку, которая не контактирует с общей линией
-            // по этой точке мы можем построить 2 вектора
-            // один из векторов нужен чтобы правильно установить плоскость для расчета пересения
-            if ([a, b, c].indexOf(tri[i2]) === -1) {
-              const pUnique = [];
-              pUnique[0] = tri[i2];
-              pUnique[1] = i2 + 1 > tri.length - 1 ? tri[0] : tri[i2 + 1];
-              pUnique[2] = i2 - 1 < 0 ? tri.length - 1 : tri[i2 - 1];
-
-              const p1 = new THREE.Vector3(position.getX(pUnique[0]), position.getY(pUnique[0]), position.getZ(pUnique[0]));
-              const p2 = new THREE.Vector3(position.getX(pUnique[1]), position.getY(pUnique[1]), position.getZ(pUnique[1]));
-              const dir1 = p2.clone().sub(p1).normalize();
-              //dirs.push(dir1);
-
-              const p3 = new THREE.Vector3(position.getX(pUnique[2]), position.getY(pUnique[2]), position.getZ(pUnique[2]));
-              const dir2 = p3.clone().sub(p1).normalize();
-              dirs.push(dir2);
-
-              const origin = p1.clone().add(obj.position);
-              const helper = new THREE.ArrowHelper(dir2, origin, 1, 0x000000);
-              helper.position.copy(origin);
-              this.scene.add(helper);
-            }
-          }
-
-          break;
-        }
-      }
+    for (let i = 0; i < tri.length; i++) {
+      const i2 = i === tri.length - 1 ? 0 : i + 1;
+      const dir = tri[i2].clone().sub(tri[i]).normalize();
+      dirs.push(dir);
     }
 
     const results = [];
@@ -172,7 +128,7 @@ export class CreateJoint {
 
       if (contours.length > 0 && contours[0].length > 0) {
         const path = contours[0];
-        //console.log('path', path);
+
         if (path.length > 6) {
           let length = 0;
 
@@ -183,11 +139,6 @@ export class CreateJoint {
 
           results.push({ path, length });
         }
-        // const geometry = this.crPol(path);
-        // const material = new THREE.MeshBasicMaterial({ color: '#7FFF00', depthTest: false, transparent: true, opacity: 1, side: 2 });
-        // const mesh = new THREE.Mesh(geometry, material);
-
-        // this.scene.add(mesh);
       }
     }
 
@@ -196,11 +147,28 @@ export class CreateJoint {
     });
     console.log(555, 'results', results);
 
+    let joint = null;
+
     if (results.length > 0) {
       const path = results[0].path;
-      const geometry = this.crPol(path);
+      const center = this.getCenter(path);
+      joint = this.crPol({ path, center, ifc_joint_id: 222 });
+    }
+
+    console.log(999, joint);
+
+    if (joint) {
+      const geometry = new THREE.CircleGeometry(1, 32);
       const material = new THREE.MeshBasicMaterial({ color: '#7FFF00', depthTest: false, transparent: true, opacity: 1, side: 2 });
+
       const mesh = new THREE.Mesh(geometry, material);
+      const pos = joint.pos;
+      const rot = joint.rot;
+      const scale = joint.scale;
+
+      mesh.position.set(pos.x, pos.y, pos.z);
+      mesh.rotation.set(rot.x, rot.y, rot.z);
+      mesh.scale.set(scale, scale, scale);
 
       this.scene.add(mesh);
     }
@@ -504,32 +472,18 @@ export class CreateJoint {
     return sumPos;
   }
 
-  // создаем геометрию контура
-  crPol(path) {
-    const sumPos = this.getCenter(path);
+  crPol({ path, center, ifc_joint_id }) {
+    const dirA = new THREE.Vector3(path[0].x - center.x, path[0].y - center.y, path[0].z - center.z).normalize();
+    const n = Math.ceil((path.length - 1) / 4);
+    const dirB = new THREE.Vector3(path[n].x - center.x, path[n].y - center.y, path[n].z - center.z).normalize();
 
-    const v = [];
+    const dir = new THREE.Vector3().crossVectors(dirA, dirB).normalize();
 
-    for (let i = 0; i < path.length; i++) {
-      let k = path.length - 1 === i ? -i : 1;
-      v.push(path[i].x, path[i].y, path[i].z);
-      v.push(sumPos.x, sumPos.y, sumPos.z);
-      v.push(path[i + k].x, path[i + k].y, path[i + k].z);
-    }
+    const m = new THREE.Matrix4().lookAt(new THREE.Vector3(), dir, new THREE.Vector3(0, 1, 0));
+    const rot = new THREE.Euler().setFromRotationMatrix(m);
 
-    for (let i = 0; i < path.length; i++) {
-      let k = path.length - 1 === i ? -i : 1;
-      v.push(path[i + k].x, path[i + k].y, path[i + k].z);
-      v.push(sumPos.x, sumPos.y, sumPos.z);
-      v.push(path[i].x, path[i].y, path[i].z);
-    }
+    const scale = new THREE.Vector3(path[0].x - center.x, path[0].y - center.y, path[0].z - center.z).length();
 
-    const geometry = new THREE.BufferGeometry();
-    const vertices = new Float32Array([...v]);
-    geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-
-    geometry.computeVertexNormals();
-
-    return geometry;
+    return { pos: center, rot: new THREE.Vector3(rot.x, rot.y, rot.z), scale, ifc_joint_id, isUser: true, isDeleted: false };
   }
 }

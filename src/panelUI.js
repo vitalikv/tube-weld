@@ -1,4 +1,4 @@
-import { addJoint, showWelds_1, calcTypeObj, showWelds_2, clickHelper, meshObjs, meshJoints } from './index';
+import { addJoint, showWelds_1, calcTypeObj, createJoint, showWelds_2, clickHelper, meshObjs, meshJoints } from './index';
 
 export class PanelUI {
   container$;
@@ -48,7 +48,7 @@ export class PanelUI {
     ind++;
 
     this.btns$[ind].onmousedown = (e) => {
-      addJoint.setActivated(!addJoint.activated);
+      createJoint.setActivated(!createJoint.activated);
       clickHelper.setActivated(!clickHelper.activated);
 
       const btn = e.target;

@@ -6,6 +6,7 @@ import { PanelUI } from './panelUI';
 import { LoaderModel } from './loader-model';
 import { AddJoint } from './addJoint';
 import { CalcWelds } from './calcWelds';
+import { CreateJoint } from './joints/createJoint';
 import { CalcJoints } from './joints/calcJoints';
 import { CalcTypeObj } from './calcTypeObj';
 import { SelectObj } from './select-obj';
@@ -16,7 +17,7 @@ let renderer, camera;
 let controls;
 let selectObj;
 
-export let addJoint, clickHelper, calcTypeObj;
+export let addJoint, clickHelper, calcTypeObj, createJoint;
 export let meshObjs = [],
   meshJoints = [];
 
@@ -116,6 +117,7 @@ function init() {
 export function setMeshes({ arr }) {
   meshObjs = arr;
   addJoint.updateMesh(arr);
+  createJoint.updateMesh(arr);
   //selectObj.updateMesh(arr);
 }
 
@@ -210,6 +212,7 @@ function initServ() {
 
   //calcWelds = new CalcWelds({ scene });
   addJoint = new AddJoint({ controls, scene, canvas: renderer.domElement, tubes: [] });
+  createJoint = new CreateJoint({ controls, scene, canvas: renderer.domElement, tubes: [] });
   calcTypeObj = new CalcTypeObj();
   selectObj = new SelectObj({ controls, scene, canvas: renderer.domElement, meshes: [] });
   clickHelper = new ClickHelper({ controls, canvas: renderer.domElement });

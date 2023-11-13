@@ -297,7 +297,7 @@ export class CalcJoints {
 
     const scale = new THREE.Vector3(path[0].pos.x - center.x, path[0].pos.y - center.y, path[0].pos.z - center.z).length();
 
-    return { pos: center, rot: new THREE.Vector3(rot.x, rot.y, rot.z), scale, ifc_joint_id, isUser: false, isDeleted: true };
+    return { pos: center, rot: new THREE.Vector3(rot.x, rot.y, rot.z), scale, ifc_joint_id, isUser: false, isDeleted: false };
   }
 
   // todo удалить
