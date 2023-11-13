@@ -7,20 +7,13 @@ function setInf({ scene2 }) {
 }
 
 // расчет стыков по дисциплине
-export class CalcWelds {
-  customGeom = false; // false - без геотметрии, true - с геометрией стыка
-  geometries = [];
-
-  constructor({ scene, meshes }) {
+export class CalcJoints {
+  constructor({ scene }) {
     setInf({ scene2: scene });
-
-    this.geometries = [];
-    return this.getGeometries(meshes);
   }
 
-  getGeometries(meshes, customGeom = false) {
-    this.customGeom = customGeom;
-
+  getJoints(meshes) {
+    const joints = [];
     const list = [];
 
     for (let i = 0; i < meshes.length; i++) {
@@ -30,12 +23,6 @@ export class CalcWelds {
 
     for (let i = 0; i < list.length; i++) {
       this.getClosestPoint({ list, id1: i });
-      try {
-      } catch (e) {
-        // captureMessage("Ошибка получения ближайшей точки", {
-        //   level: "warning",
-        // });
-      }
     }
 
     for (let i = 0; i < list.length; i++) {
@@ -53,13 +40,13 @@ export class CalcWelds {
       if (list[i].id2 !== 999999) ifc_joint_id.push(...list[list[i].id2].guids);
       //const ifc_joint_id = [];
 
-      const geometry = this.crPol({ path: list[i].path, center: list[i].centerPos, ifc_joint_id });
+      const result = this.crPol({ path: list[i].path, center: list[i].centerPos, ifc_joint_id });
 
-      if (geometry.userData.scale && geometry.userData.scale > 1) continue;
-      this.geometries.push(geometry);
+      if (result.scale && result.scale > 1) continue;
+      joints.push(result);
     }
 
-    return this.geometries;
+    return joints;
   }
 
   // находим дубли (clone = true) и одиночные стыки (id2 = -1)
@@ -112,10 +99,6 @@ export class CalcWelds {
         list[id].id2 = 999999;
       }
     }
-  }
-
-  clear() {
-    this.geometries = [];
   }
 
   // находим стыки
@@ -302,57 +285,19 @@ export class CalcWelds {
 
   // получаем геометрию крышки
   crPol({ path, center, ifc_joint_id }) {
-    let geometry = new THREE.BufferGeometry();
+    const dirA = new THREE.Vector3(path[0].pos.x - center.x, path[0].pos.y - center.y, path[0].pos.z - center.z).normalize();
+    const n = Math.ceil((path.length - 1) / 4);
+    const dirB = new THREE.Vector3(path[n].pos.x - center.x, path[n].pos.y - center.y, path[n].pos.z - center.z).normalize();
 
-    const sumPos = center;
+    const dir = new THREE.Vector3().crossVectors(dirA, dirB).normalize();
+    this.helperArrow({ dir, pos: center, length: 1, color: 0x0000ff });
 
-    // custom геометрия на основе стыка
-    if (this.customGeom) {
-      const v = [];
+    const m = new THREE.Matrix4().lookAt(new THREE.Vector3(), dir, new THREE.Vector3(0, 1, 0));
+    const rot = new THREE.Euler().setFromRotationMatrix(m);
 
-      for (let i = 0; i < path.length; i++) {
-        let k = path.length - 1 === i ? -i : 1;
-        v.push(path[i].pos.x - sumPos.x, path[i].pos.y - sumPos.y, path[i].pos.z - sumPos.z);
-        v.push(0, 0, 0);
-        v.push(path[i + k].pos.x - sumPos.x, path[i + k].pos.y - sumPos.y, path[i + k].pos.z - sumPos.z);
-      }
+    const scale = new THREE.Vector3(path[0].pos.x - center.x, path[0].pos.y - center.y, path[0].pos.z - center.z).length();
 
-      for (let i = 0; i < path.length; i++) {
-        let k = path.length - 1 === i ? -i : 1;
-        v.push(path[i + k].pos.x - sumPos.x, path[i + k].pos.y - sumPos.y, path[i + k].pos.z - sumPos.z);
-        v.push(0, 0, 0);
-        v.push(path[i].pos.x - sumPos.x, path[i].pos.y - sumPos.y, path[i].pos.z - sumPos.z);
-      }
-
-      const vertices = new Float32Array([...v]);
-      geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-      geometry.computeVertexNormals();
-    } else {
-      const dirA = new THREE.Vector3(path[0].pos.x - sumPos.x, path[0].pos.y - sumPos.y, path[0].pos.z - sumPos.z).normalize();
-      const n = Math.ceil((path.length - 1) / 4);
-      const dirB = new THREE.Vector3(path[n].pos.x - sumPos.x, path[n].pos.y - sumPos.y, path[n].pos.z - sumPos.z).normalize();
-
-      const dir = new THREE.Vector3().crossVectors(dirA, dirB).normalize();
-      this.helperArrow({ dir, pos: sumPos, length: 1, color: 0x0000ff });
-
-      const m = new THREE.Matrix4().lookAt(new THREE.Vector3(), dir, new THREE.Vector3(0, 1, 0));
-      const rot = new THREE.Euler().setFromRotationMatrix(m);
-
-      const scale = new THREE.Vector3(path[0].pos.x - sumPos.x, path[0].pos.y - sumPos.y, path[0].pos.z - sumPos.z).length();
-
-      geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0]), 3));
-      geometry.userData.empty = true;
-      geometry.userData.rot = new THREE.Vector3(rot.x, rot.y, rot.z);
-      geometry.userData.scale = scale;
-      geometry.userData.dir = dir;
-    }
-
-    geometry.userData.ifc_joint_id = ifc_joint_id;
-    geometry.userData.pos = sumPos;
-
-    geometry.userData.tag = 'joint'; // нету в cs
-
-    return geometry;
+    return { pos: center, rot: new THREE.Vector3(rot.x, rot.y, rot.z), scale, ifc_joint_id, isUser: false, isDeleted: true };
   }
 
   // todo удалить

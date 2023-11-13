@@ -6,6 +6,7 @@ import { PanelUI } from './panelUI';
 import { LoaderModel } from './loader-model';
 import { AddJoint } from './addJoint';
 import { CalcWelds } from './calcWelds';
+import { CalcJoints } from './joints/calcJoints';
 import { CalcTypeObj } from './calcTypeObj';
 import { SelectObj } from './select-obj';
 import { ClickHelper } from './clickHelper';
@@ -15,7 +16,7 @@ let renderer, camera;
 let controls;
 let selectObj;
 
-export let addJoint, calcWelds, clickHelper, calcTypeObj;
+export let addJoint, clickHelper, calcTypeObj;
 export let meshObjs = [],
   meshJoints = [];
 
@@ -118,20 +119,21 @@ export function setMeshes({ arr }) {
   //selectObj.updateMesh(arr);
 }
 
-// показываем стыки
-export function showWelds() {
+// показываем стыки (старый рабочей метод, с геометрией)
+export function showWelds_1() {
   const meshes = meshObjs;
 
   for (let i = 0; i < meshes.length; i++) {
     meshes[i].userData.geoGuids = [meshes[i].uuid];
   }
 
+  const calcWelds = new CalcWelds({ scene });
   const geometries = calcWelds.getGeometries(meshes, false);
 
   const geometry = new THREE.CircleGeometry(1, 32);
   const material = new THREE.MeshBasicMaterial({ color: '#7FFF00', depthTest: false, transparent: true, opacity: 1, side: 2 });
 
-  //console.log(geometries);
+  console.log(geometries);
   const arr = [];
 
   for (let i = 0; i < geometries.length; i++) {
@@ -163,11 +165,50 @@ export function showWelds() {
   console.log(arr);
 }
 
+// показываем стыки (новый метод)
+export function showWelds_2() {
+  const meshes = meshObjs;
+
+  for (let i = 0; i < meshes.length; i++) {
+    meshes[i].userData.geoGuids = [meshes[i].uuid];
+  }
+
+  const calcJoints = new CalcJoints({ scene });
+  const result = calcJoints.getJoints(meshes);
+
+  const geometry = new THREE.CircleGeometry(1, 32);
+  const material = new THREE.MeshBasicMaterial({ color: '#7FFF00', depthTest: false, transparent: true, opacity: 1, side: 2 });
+
+  //console.log(geometries);
+  const arr = [];
+
+  for (let i = 0; i < result.length; i++) {
+    const mesh = new THREE.Mesh(geometry, material);
+    const pos = result[i].pos;
+    const rot = result[i].rot;
+    const scale = result[i].scale;
+    const ifc_joint_id = result[i].ifc_joint_id;
+
+    mesh.position.set(pos.x, pos.y, pos.z);
+    mesh.rotation.set(rot.x, rot.y, rot.z);
+    mesh.scale.set(scale, scale, scale);
+
+    mesh.userData = { ifc_joint_id };
+
+    scene.add(mesh);
+
+    arr.push(mesh);
+  }
+
+  meshJoints = arr;
+  console.log(arr);
+}
+
 function initServ() {
   const panelUI = new PanelUI();
   panelUI.init();
 
-  calcWelds = new CalcWelds({ scene });
+  //calcWelds = new CalcWelds({ scene });
   addJoint = new AddJoint({ controls, scene, canvas: renderer.domElement, tubes: [] });
   calcTypeObj = new CalcTypeObj();
   selectObj = new SelectObj({ controls, scene, canvas: renderer.domElement, meshes: [] });

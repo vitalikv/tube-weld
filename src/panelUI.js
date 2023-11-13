@@ -1,4 +1,4 @@
-import { addJoint, calcWelds, showWelds, calcTypeObj, clickHelper, meshObjs, meshJoints } from './index';
+import { addJoint, showWelds_1, calcTypeObj, showWelds_2, clickHelper, meshObjs, meshJoints } from './index';
 
 export class PanelUI {
   container$;
@@ -9,9 +9,12 @@ export class PanelUI {
   init() {
     this.crPanel();
 
-    this.btns$[0] = this.crBtn({ txt: 'добавить стык' });
-    this.btns$[1] = this.crBtn({ txt: 'рассчитать стыки' });
-    this.btns$[2] = this.crBtn({ txt: 'рассчитать типы' });
+    this.btns$[0] = this.crBtn({ txt: 'добавить стык 1' });
+    this.btns$[1] = this.crBtn({ txt: 'рассчитать стыки 1' });
+    this.btns$[2] = this.crBtn({ txt: 'рассчитать типы 1' });
+    this.btns$[3] = this.crBtn({ txt: 'добавить стык 2' });
+    this.btns$[4] = this.crBtn({ txt: 'рассчитать стыки 2' });
+    this.btns$[5] = this.crBtn({ txt: 'рассчитать типы 2' });
 
     this.initEvent();
   }
@@ -35,7 +38,27 @@ export class PanelUI {
     ind++;
 
     this.btns$[ind].onmousedown = () => {
-      showWelds();
+      showWelds_1();
+    };
+    ind++;
+
+    this.btns$[ind].onmousedown = () => {
+      calcTypeObj.calcTypes({ meshObjs, meshJoints });
+    };
+    ind++;
+
+    this.btns$[ind].onmousedown = (e) => {
+      addJoint.setActivated(!addJoint.activated);
+      clickHelper.setActivated(!clickHelper.activated);
+
+      const btn = e.target;
+      const color = btn.style.background === 'rgb(255, 255, 255)' ? '#87ea89' : '#fff';
+      btn.style.background = color;
+    };
+    ind++;
+
+    this.btns$[ind].onmousedown = () => {
+      showWelds_2();
     };
     ind++;
 
@@ -46,7 +69,7 @@ export class PanelUI {
   }
 
   crPanel() {
-    const css = `position: absolute; top: 0; right: 0; width: 248px; height: 200px; background: #F0F0F0; border: 1px solid #D1D1D1; border-radius: 4px; font-family: arial,sans-serif; z-index: 4;`;
+    const css = `position: absolute; top: 0; right: 0; width: 248px; height: 400px; background: #F0F0F0; border: 1px solid #D1D1D1; border-radius: 4px; font-family: arial,sans-serif; z-index: 4;`;
 
     const html = `
     <div style="${css}">
