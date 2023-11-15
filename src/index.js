@@ -6,9 +6,10 @@ import { PanelUI } from './panelUI';
 import { LoaderModel } from './loader-model';
 import { AddJoint } from './addJoint';
 import { CalcWelds } from './calcWelds';
+import { CalcTypeObj } from './calcTypeObj';
 import { CreateJoint } from './joints/createJoint';
 import { CalcJoints } from './joints/calcJoints';
-import { CalcTypeObj } from './calcTypeObj';
+import { GetTypeObjs } from './isometrix/getTypeObjs';
 import { SelectObj } from './select-obj';
 import { ClickHelper } from './clickHelper';
 
@@ -17,7 +18,7 @@ let renderer, camera;
 let controls;
 let selectObj;
 
-export let addJoint, clickHelper, calcTypeObj, createJoint;
+export let addJoint, clickHelper, calcTypeObj, createJoint, getTypeObjs;
 export let meshObjs = [],
   meshJoints = [];
 
@@ -113,12 +114,20 @@ function init() {
   );
 }
 
+export function getScene() {
+  return scene;
+}
+
 // подписка событие - обновление массива объектов для расчета стыков
 export function setMeshes({ arr }) {
   meshObjs = arr;
   addJoint.updateMesh(arr);
   createJoint.updateMesh(arr);
   //selectObj.updateMesh(arr);
+}
+
+export function getMeshes() {
+  return meshObjs;
 }
 
 // показываем стыки (старый рабочей метод, с геометрией)
@@ -214,6 +223,7 @@ function initServ() {
   addJoint = new AddJoint({ controls, scene, canvas: renderer.domElement, tubes: [] });
   createJoint = new CreateJoint({ controls, scene, canvas: renderer.domElement, tubes: [] });
   calcTypeObj = new CalcTypeObj();
+  getTypeObjs = new GetTypeObjs();
   selectObj = new SelectObj({ controls, scene, canvas: renderer.domElement, meshes: [] });
   clickHelper = new ClickHelper({ controls, canvas: renderer.domElement });
 }

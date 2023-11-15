@@ -1,18 +1,13 @@
 import * as THREE from 'three';
 
-let scene;
-
-function setInf({ scene2 }) {
-  scene = scene2;
-}
+import { getScene } from '../index';
 
 // расчет стыков по дисциплине
-export class CalcJoints {
-  constructor({ scene }) {
-    setInf({ scene2: scene });
-  }
+export class CalcJointsForType {
+  scene;
 
   getJoints(meshes) {
+    this.scene = getScene();
     const joints = [];
     const list = [];
 
@@ -297,7 +292,7 @@ export class CalcJoints {
 
     const scale = new THREE.Vector3(path[0].pos.x - center.x, path[0].pos.y - center.y, path[0].pos.z - center.z).length();
 
-    return { pos: center, rot: new THREE.Vector3(rot.x, rot.y, rot.z), scale, ifc_joint_id, isUser: false, isDeleted: false };
+    return { pos: center, rot: new THREE.Vector3(rot.x, rot.y, rot.z), scale, ifc_joint_id, dir };
   }
 
   // todo удалить
@@ -305,7 +300,7 @@ export class CalcJoints {
   helperArrow({ dir, pos, length = 1, color = 0x0000ff }) {
     const helper = new THREE.ArrowHelper(dir, pos, length, color);
     helper.position.copy(pos);
-    scene.add(helper);
+    this.scene.add(helper);
   }
 
   // todo удалить
@@ -313,6 +308,6 @@ export class CalcJoints {
   helperBox({ pos, size, color = 0x0000ff }) {
     const box = new THREE.Mesh(new THREE.BoxGeometry(size, size, size), new THREE.MeshStandardMaterial({ color, depthTest: true, transparent: true }));
     box.position.copy(pos);
-    scene.add(box);
+    this.scene.add(box);
   }
 }

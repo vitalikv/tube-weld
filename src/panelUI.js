@@ -1,4 +1,4 @@
-import { addJoint, showWelds_1, calcTypeObj, createJoint, showWelds_2, clickHelper, meshObjs, meshJoints } from './index';
+import { addJoint, showWelds_1, calcTypeObj, createJoint, showWelds_2, clickHelper, meshObjs, meshJoints, getTypeObjs } from './index';
 
 export class PanelUI {
   container$;
@@ -63,7 +63,7 @@ export class PanelUI {
     ind++;
 
     this.btns$[ind].onmousedown = () => {
-      calcTypeObj.calcTypes({ meshObjs, meshJoints });
+      getTypeObjs.showType();
     };
     ind++;
   }
