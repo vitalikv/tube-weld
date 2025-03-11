@@ -109,7 +109,11 @@ export class CalcJointsForType {
     obj.material.wireframe = true;
 
     const position = geometry.getAttribute('position');
-    const normal = geometry.getAttribute('normal');
+    let normal = geometry.getAttribute('normal');
+    if (!normal) {
+      geometry.computeVertexNormals();
+      normal = geometry.getAttribute('normal');
+    }
 
     const arrP = this.getDataPoints({ position, normal, obj });
 

@@ -42,7 +42,10 @@ export class CalcJoints {
 
       const result = this.crPol({ path: list[i].path, center: list[i].centerPos, ifc_joint_id });
 
-      if (result.scale && result.scale > 1) continue;
+      // if (result.scale) {
+      //   if (result.scale > 1 || result.scale < 0.016) continue;
+      // }
+
       joints.push(result);
     }
 
@@ -114,7 +117,11 @@ export class CalcJoints {
     obj.material.wireframe = true;
 
     const position = geometry.getAttribute('position');
-    const normal = geometry.getAttribute('normal');
+    let normal = geometry.getAttribute('normal');
+    if (!normal) {
+      geometry.computeVertexNormals();
+      normal = geometry.getAttribute('normal');
+    }
 
     const arrP = this.getDataPoints({ position, normal, obj });
 

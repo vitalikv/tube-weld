@@ -68,7 +68,7 @@ export class SelectObj {
     let str = '';
     const uuids = [];
     const list = this.listSelectObjs;
-
+    console.log(list);
     for (let i = 0; i < list.length; i++) {
       uuids.push(list[i].uuid);
       str += '"' + list[i].uuid + '",';

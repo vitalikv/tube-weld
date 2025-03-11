@@ -13,9 +13,8 @@ import { GetTypeObjs } from './isometrix/getTypeObjs';
 import { SelectObj } from './select-obj';
 import { ClickHelper } from './clickHelper';
 
-export let scene;
+export let scene, controls;
 let renderer, camera;
-let controls;
 let selectObj;
 
 export let addJoint, clickHelper, calcTypeObj, createJoint, getTypeObjs;
@@ -66,11 +65,19 @@ function init() {
   scene.add(new THREE.HemisphereLight(0xffffff, 0x223344, 0.4));
 
   // camera setup
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 50);
-  camera.position.set(10, 10, -10);
-  camera.far = 1000;
-  camera.updateProjectionMatrix();
-  window.camera = camera;
+  const cameraP = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 50);
+  cameraP.position.set(10, 10, -10);
+  cameraP.far = 1000;
+  cameraP.updateProjectionMatrix();
+
+  let aspect = renderer.domElement.clientWidth / renderer.domElement.clientHeight;
+  const d = 5;
+  const cameraO = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 100000);
+  cameraO.position.copy(cameraP.position.clone());
+  cameraO.updateMatrixWorld();
+  cameraO.updateProjectionMatrix();
+
+  camera = cameraO;
 
   controls = new OrbitControls(camera, renderer.domElement);
 

@@ -53,6 +53,7 @@ export class CalcWelds {
       const geometry = this.crPol({ path: list[i].path, center: list[i].centerPos, ifc_joint_id });
 
       if (geometry.userData.scale && geometry.userData.scale > 1) continue;
+      if (geometry.userData.scale < 0.016) continue;
       this.geometries.push(geometry);
     }
 
